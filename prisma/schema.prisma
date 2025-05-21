@@ -1,0 +1,78 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String?   @unique
+  password  String?
+  name      String?
+  role      Role      @default(USER)
+  createdAt DateTime  @default(now())
+  jobPosts  JobPost[]
+  votes     JobVote[]
+}
+
+model JobPost {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  tags        String[]
+  verified    Boolean   @default(false)
+  sourceType  String    // 'image' | 'link' | 'form'
+  createdAt   DateTime  @default(now())
+  createdBy   User?     @relation(fields: [createdById], references: [id])
+  createdById String?
+  companyId   String?
+  media       Media?
+  source      SubmissionSource?
+  votes       JobVote[]
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  filePath  String
+  jobPost   JobPost  @relation(fields: [jobPostId], references: [id])
+  jobPostId String   @unique
+  createdAt DateTime @default(now())
+}
+
+model SubmissionSource {
+  id            String   @id @default(uuid())
+  jobPost       JobPost  @relation(fields: [jobPostId], references: [id])
+  jobPostId     String   @unique
+  type          String   // 'image' | 'link' | 'form'
+  originalInput String
+  parsedText    String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+}
+
+model JobVote {
+  id        String   @id @default(uuid())
+  jobPost   JobPost  @relation(fields: [jobPostId], references: [id])
+  jobPostId String
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  vote      Vote
+  createdAt DateTime @default(now())
+
+  @@unique([jobPostId, userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Vote {
+  UP
+  DOWN
+}
